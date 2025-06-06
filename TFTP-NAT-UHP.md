@@ -95,7 +95,7 @@ Note over ClientA,ClientB: both NAT Devices have mapping now, but it's incorrect
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:36890
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890
 Note over NatB: destination port mismatch<br />36890 != 48531<br />dropped
-ClientB ->> NatB: from 10.0.0.44:48531 to 198.51.100.1:33333
+ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
 NatB ->> NatA: from 203.0.113.1:48531 to 198.51.100.1:33333
 Note over NatA: source port mismatch<br />36890 != 48531<br />dropped
 Note over ClientA,ClientB: packets dropped on both NAT devices
@@ -106,4 +106,45 @@ In this case the Client A can still try to establish a direct UDP stream to Clie
 This will take time and will require maybe thausends of packets to be sent to NAT Device B.
 If Client A will send those packets quickly that may stress NAT device B - overflow of translation table, higher CPU usage due to flood of UDP packets, bandwidtch exhaustion could be a problem.
 Sending those guessing packets slowly can cause the correct translation table entry (on NAT B) to be removed due to timeout before Client A would be able to guess it.
+
+## TFTP assisted UDP Hole Punching
+
+Let's see how introducing TFTP ALG on NAT Device A can change the situation. The well-known port for TFTP protocol is UDP/69.
+The NAT device A is a EIM-NAT type with TFTP ALG (connection tracking helper). The NAT device B is a non-EIM-NAT type device that pick random port for each endpoint.
+
+```mermaid
+sequenceDiagram
+    participant ClientA as Client A<br />192.168.1.33
+    participant NatA as NAT Device A (EIM-NAT)<br />198.51.100.1
+    participant S as Rendezvous Server S
+    participant NatB as NAT Device B (non-EIM-NAT)<br />203.0.113.1
+    participant ClientB as Client B<br />10.0.0.44
+
+ClientA ->> NatA: from 192.168.1.33:33333 to S
+NatA ->> S: from 198.51.100.1:33333 to S
+ClientB ->> NatB: from 10.0.0.44:44444 to S
+NatB ->> S: from 203.0.113.1:51021 to S
+Note over S: Randezvous server now knows external addresses and ports assigned by NAT Devices A and B
+S -->> ClientA: Client B is on 203.0.113.1:51021<br />(true only for server S)
+S -->> ClientB: Client A is on 198.51.100.1:33333
+Note over ClientA,ClientB: Trying to establish a direct UDP packet stream
+ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:69
+NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:69
+Note over NatA: TFTP translation table entry added<br />will accept reply from any port on 203.0.113.1
+Note over NatB: initial packets will be dropped<br />either due to a TTL limit or because no service should listen on 203.0.113.1:69
+ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
+NatB ->> NatA: from 203.0.113.1:36747 to 198.51.100.1:33333
+Note over NatB: translation table entry added
+Note over NatA: initial packets can be sent with limited TTL<br /> and don't even reach Nat Device A
+Note over ClientA,ClientB: both NAT Devices have mapping now
+ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
+NatB ->> NatA: from 203.0.113.1:44576 to 198.51.100.1:33333
+Note over NatA: translation table entry updated
+NatA ->> ClientA: from 203.0.113.1:44576 to 192.168.1.33:33333
+Note over ClientA: now Client A knows the external port of client B
+ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:44576
+NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:44576
+NatB ->> ClientB: from 198.51.100.1:33333 to 10.0.0.44:44444
+Note over ClientA,ClientB: UDP packet stream established
+```
 
