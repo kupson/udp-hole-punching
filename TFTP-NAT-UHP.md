@@ -45,7 +45,7 @@ NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:44444
 Note over NatA: translation table entry added
 Note over NatB: initial packets can be sent with limited TTL<br /> and don't even reach Nat Device B
 ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
-NatB ->> NatA: from 10.0.0.44:44444 to 198.51.100.1:33333
+NatB ->> NatA: from 203.0.113.1:44444 to 198.51.100.1:33333
 Note over NatB: translation table entry added
 Note over NatA: initial packets can be sent with limited TTL<br /> and don't even reach Nat Device A
 Note over ClientA,ClientB: both NAT Devices should have correct mapping now
@@ -53,8 +53,8 @@ ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:44444
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:44444
 NatB ->> ClientB: from 198.51.100.1:33333 to 10.0.0.44:44444
 ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
-NatB ->> NatA: from 10.0.0.44:44444 to 198.51.100.1:33333
-NatA ->> ClientA: from 10.0.0.44:44444 to 192.168.1.33:33333
+NatB ->> NatA: from 203.0.113.1:44444 to 198.51.100.1:33333
+NatA ->> ClientA: from 203.0.113.1:44444 to 192.168.1.33:33333
 Note over ClientA,ClientB: UDP packet stream established
 ```
 
@@ -80,23 +80,27 @@ NatA ->> S: from 198.51.100.1:33333 to S
 ClientB ->> NatB: from 10.0.0.44:44444 to S
 NatB ->> S: from 203.0.113.1:36890 to S
 Note over S: Randezvous server now knows external addresses and ports assigned by NAT Devices A and B
-S -->> ClientA: Client B is on 203.0.113.1:36890
+S -->> ClientA: Client B is on 203.0.113.1:36890<br />(true only for server S)
 S -->> ClientB: Client A is on 198.51.100.1:33333
 Note over ClientA,ClientB: Trying to establish a direct UDP packet stream
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:36890
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890
 Note over NatA: translation table entry added<br />(incorrect)
 ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
-NatB ->> NatA: from 10.0.0.44:48531 to 198.51.100.1:33333
+NatB ->> NatA: from 203.0.113.1:48531 to 198.51.100.1:33333
 Note over NatB: translation table entry added<br />(incorrect)
-Note over ClientA,ClientB: NAT A expects packets from 36890, NAT B sends packets from 48531
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:36890
-NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890<br />(expects destination port 48531)
+NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890
+Note over NatB: destination port mismatch<br />36890 != 48531<br />dropped
 ClientB ->> NatB: from 10.0.0.44:48531 to 198.51.100.1:33333
-NatB ->> NatA: from 10.0.0.44:48531 to 198.51.100.1:33333<br />(expects destination port 36890)
+NatB ->> NatA: from 203.0.113.1:48531 to 198.51.100.1:33333
+Note over NatA: source port mismatch<br />36890 != 48531<br />dropped
 Note over ClientA,ClientB: packets dropped on both NAT devices
 ```
 
-In this case the Client A can still try to establish a direct UDP stream to Client B by guessing correct port number in translation table on NAT Device B. This will take time and will require maybe thausends of packets to be sent to NAT Device B.
-If Client A will send those packets quickly that may stress NAT device B - overflow of translation table, higher CPU usage due to flood of UDP packets, bandwidtch exhaustion could be a problem. Sending those guessing packets slowly can cause the correct translation table entry (on NAT B) to be removed due to timeout before Client A would be able to guess it.
+In this case the Client A can still try to establish a direct UDP stream to Client B by guessing correct port number in translation table on NAT Device B.
+
+This will take time and will require maybe thausends of packets to be sent to NAT Device B.
+If Client A will send those packets quickly that may stress NAT device B - overflow of translation table, higher CPU usage due to flood of UDP packets, bandwidtch exhaustion could be a problem.
+Sending those guessing packets slowly can cause the correct translation table entry (on NAT B) to be removed due to timeout before Client A would be able to guess it.
 
