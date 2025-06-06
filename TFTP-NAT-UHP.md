@@ -86,9 +86,12 @@ Note over ClientA,ClientB: Trying to establish a direct UDP packet stream
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:36890
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890
 Note over NatA: translation table entry added<br />(incorrect)
+Note over NatB: initial packets can be sent with limited TTL<br /> and don't even reach Nat Device B
 ClientB ->> NatB: from 10.0.0.44:44444 to 198.51.100.1:33333
 NatB ->> NatA: from 203.0.113.1:48531 to 198.51.100.1:33333
 Note over NatB: translation table entry added<br />(incorrect)
+Note over NatA: initial packets can be sent with limited TTL<br /> and don't even reach Nat Device A
+Note over ClientA,ClientB: both NAT Devices have mapping now, but it's incorrect
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:36890
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:36890
 Note over NatB: destination port mismatch<br />36890 != 48531<br />dropped
