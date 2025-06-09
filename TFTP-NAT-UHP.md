@@ -1,28 +1,27 @@
-# TFTP assisted UDP NAT Hole Punching
+# TFTP-Assisted UDP NAT Hole Punching
 
 ## Abstract
 
-This document describes an extension to the UDP NAT Hole Punching method of NAT Traversal described in [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html).
-On some NAT devices the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350) Application Level Gateway (ALG) can be used to greatly increase ability to connect to remote peers.
+This document describes an extension to the UDP NAT Hole Punching method for NAT traversal, as outlined in [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html).
+On certain NAT devices, the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350) Application Level Gateway (ALG) can be leveraged to significantly increase the success rate of establishing connections between peers.
 
 ## TFTP Application Level Gateway
 
-Due to simplicity of the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350) the ALG in devices performing NAT is typically not a full TFTP protocol proxy but merely a helper to the connection tracking code.
+Due to the simplicity of the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350), ALGs implemented in NAT devices are typically not full TFTP protocol proxies but act merely as helpers that modify NAT translation behavior.
 
-NAT devices compatible with TFTP protocol do accept UDP packet reply to TFTP request from *any* port of the target IP.
+NAT devices that support the TFTP protocol will accept UDP responses to TFTP requests from *any* source port on the target IP address.
 
-## NAT types
+## NAT Types
 
-The [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html) document describes different NAT types. Two important for us will be:
+As described in [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html), there are different types of NAT behaviors. Two are of particular interest:
 
-- Endpoint-Independent Mapping type (EIM-NAT) - The same external address and port is used when given client port is used to send UDP packets to multiple different endpoints.
-- Non Endpoint-Independent Mapping type (non-EIM-NAT) - The external address may stay the same but the external port will be different when the same client port will be used to send UDP packets to different endpoints.
+- **Endpoint-Independent Mapping (EIM-NAT):** The same external address and port are used when a client sends UDP packets from the same internal port to multiple different endpoints.
+- **Non-Endpoint-Independent Mapping (non-EIM-NAT):** The external port[^1] may vary when the client sends UDP packets to different endpoints, even when using the same internal port.
 
 ## Classic UDP Hole Punching
 
-The UDP Hole Punching NAT Traversal method as described in 
-[RFC5128 3.3.](https://www.rfc-editor.org/rfc/rfc5128.html#section-3.3)
-requires both-end NAT Devices to be Endpoint-Independent Mapping type (EIM-NAT).
+The UDP Hole Punching technique, as described in [RFC5128 §3.3](https://www.rfc-editor.org/rfc/rfc5128.html#section-3.3),
+relies on both NAT devices being of the EIM-NAT type.
 
 ```mermaid
 sequenceDiagram
@@ -58,14 +57,15 @@ NatA ->> ClientA: from 203.0.113.1:44444 to 192.168.1.33:33333
 Note over ClientA,ClientB: UDP packet stream established
 ```
 
-Sending initial packets with limited Time-To-Live prevents the opposite NAT device from adding erroreus translation table entries.
-This can happen on some devices when they receive a UDP packet without existing translation table entry.
+### Key Observations
 
-Once established the UDP packet stream would need to kept alive by sending keep-alive packets. That should prevent NAT Devices from removing the needed transation table entries.
+Sending initial packets with a limited Time-To-Live (TTL) prevents the opposite NAT device from adding erroneous translation table entries—this can happen on some devices when receiving UDP packets for which no mapping exists yet.
+
+Once a UDP packet stream is established, keep-alive packets must be sent periodically to prevent NAT devices from expiring the translation table entries.
 
 ## Failed UDP Hole Punching
 
-Let's examine the scenario where one of the NAT devices is still a EIM-NAT type but the peer is a non-EIM-NAT type device that pick random port for each endpoint.
+Consider a scenario where one peer is behind an EIM-NAT and the other behind a non-EIM-NAT device, which assigns a random external port per endpoint.
 
 ```mermaid
 sequenceDiagram
@@ -101,16 +101,16 @@ Note over NatA: source port mismatch<br />36890 != 48531<br />dropped
 Note over ClientA,ClientB: packets dropped on both NAT devices
 ```
 
-In this case the Client A can still try to establish a direct UDP stream to Client B by guessing correct port number in translation table on NAT Device B.
+### Key Observations
 
-This will take time and will require maybe thausends of packets to be sent to NAT Device B.
-If Client A will send those packets quickly that may stress NAT device B - overflow of translation table, higher CPU usage due to flood of UDP packets, bandwidtch exhaustion could be a problem.
-Sending those guessing packets slowly can cause the correct translation table entry (on NAT B) to be removed due to timeout before Client A would be able to guess it.
+Client A may still attempt to establish a direct UDP packet stream by guessing the external port of Client B. However:
 
-## TFTP assisted UDP Hole Punching
+- Sending too many guesses quickly can stress NAT B (CPU load, translation table overflows, bandwidth).
+- Sending guesses too slowly risks expiration of the required translation table entries.
 
-Let's see how introducing TFTP ALG on NAT Device A can change the situation. The well-known port for TFTP protocol is UDP/69.
-The NAT device A is a EIM-NAT type with TFTP ALG (connection tracking helper). The NAT device B is a non-EIM-NAT type device that pick random port for each endpoint.
+## TFTP-Assisted UDP Hole Punching
+
+Now consider the case where NAT A supports TFTP ALG and is EIM-NAT, while NAT B is non-EIM-NAT. The well-known port for TFTP protocol is UDP/69.
 
 ```mermaid
 sequenceDiagram
@@ -148,19 +148,28 @@ NatB ->> ClientB: from 198.51.100.1:33333 to 10.0.0.44:44444
 Note over ClientA,ClientB: UDP packet stream established
 ```
 
-This method can be combined with the classic approach from RFC5128 by sending one additional UDP packet to port 69 of the opposite peer external IP address. Possibly after a short timeout period.
+### Key Observations
+
+Sending a single packet to port 69 on the peer's external IP address allows NAT A to create a more permissive translation table entry due to the TFTP ALG behavior.
+
+This method can be combined with the classic approach by sending an additional UDP packet to port 69, ideally after a short timeout if standard hole punching fails.
 
 ## Applications
 
-The applicability of the described mechanism depends a lot on the question how wirespread are the NAT devices with TFTP ALG support enabled. Some data may suggest that at least some ISPs ship DSL routers with TFTP ALG enabled by default.
-It would be nice to gather more examples and estimate better how much this method would help to create better Peer-to-peer connections.
+The utility of this method depends largely on the prevalence of NAT devices with TFTP ALG enabled. Some data suggests that certain DSL routers shipped by ISPs include this feature enabled by default.
+Further data collection is needed to assess the general viability of this technique for enhancing peer-to-peer connectivity.
 
-#### Metadata
+However, due to the low complexity and minimal cost associated with the described method, it could still be useful even if only a minority of residential routers—e.g., one in several—have TFTP ALG enabled.
 
 ---
-title: TFTP assisted UDP NAT Hole Punching
+
+### Metadata
+
+```yaml
+title: TFTP-Assisted UDP NAT Hole Punching
 author: Rafał Kupka
-e-mail: r.kupson@gmail.com
+email: r.kupson@gmail.com
 date: 2025-06-09
----
+```
 
+[^1]: External IP address can vary too but it's less common.
