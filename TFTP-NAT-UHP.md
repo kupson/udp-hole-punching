@@ -148,3 +148,19 @@ NatB ->> ClientB: from 198.51.100.1:33333 to 10.0.0.44:44444
 Note over ClientA,ClientB: UDP packet stream established
 ```
 
+This method can be combined with the classic approach from RFC5128 by sending one additional UDP packet to port 69 of the opposite peer external IP address. Possibly after a short timeout period.
+
+## Applications
+
+The applicability of the described mechanism depends a lot on the question how wirespread are the NAT devices with TFTP ALG support enabled. Some data may suggest that at least some ISPs ship DSL routers with TFTP ALG enabled by default.
+It would be nice to gather more examples and estimate better how much this method would help to create better Peer-to-peer connections.
+
+#### Metadata
+
+---
+title: TFTP assisted UDP NAT Hole Punching
+author: Rafał Kupka
+e-mail: r.kupson@gmail.com
+date: 2025-06-09
+---
+
