@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+import logging
+import argparse
+import socket
+import struct
+
+logger = logging.getLogger(__name__)
+
+_TFTP_PREFIX = "v1_tftp_udp_"
+_TFTP_MODE = "octet"
+_TFTP_MODE_LEN = len(_TFTP_MODE)
+
+_SERVER_LIST = [
+    ("157.245.47.226", 69),
+    ("207.154.212.211", 69),
+]
+
+
+def create_tftp_socket(port, timeout):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(timeout)
+    s.bind(("", port))
+    return s
+
+
+def create_tftp_request(port):
+    filename = f"{_TFTP_PREFIX}{port}"
+    filename_len = len(filename)
+
+    return struct.pack(
+        f">H{filename_len}sb{_TFTP_MODE_LEN}sb",
+        1,
+        filename.encode("ascii"),
+        0,
+        _TFTP_MODE.encode("ascii"),
+        0,
+    )
+
+
+def send_tftp_request(s, pkt, srv):
+    try:
+        s.sendto(pkt, srv)
+        rsp, _ = s.recvfrom(1500)
+        return rsp
+    except Exception:
+        logger.exception("Error sending/receiving:")
+        return b""
+
+
+def parse_tftp_response(rsp):
+    if len(rsp) <= 4 + len(_TFTP_PREFIX):
+        raise ValueError("Incorrect TFTP reply length")
+    rsp_opcode, rsp_blockn = struct.unpack(">HH", rsp[:4])
+    if rsp_opcode != 3:
+        raise ValueError("Incorrect TFTP reply opcode")
+    if rsp_blockn != 1:
+        raise ValueError("Incorrect TFTP reply block number")
+    rsp_data = rsp[4:]
+    ip, port = rsp_data.decode("ascii").strip().split(":", 1)
+    return ip, int(port)
+
+
+def tftp_test(s, src_port, srv, tries):
+    pkt = create_tftp_request(src_port)
+    addr, port = None, None
+    for _ in range(tries):
+        try:
+            rsp = send_tftp_request(s, pkt, srv)
+            if rsp:
+                addr, port = parse_tftp_response(rsp)
+            break
+        except Exception:
+            logger.exception("Error:")
+    return addr, port
+
+
+def parse_server_list(value):
+    items = value.split(",")
+    result = []
+    for item in items:
+        if ":" in item:
+            ip, port = item.split(":", 1)
+            result.append((ip, int(port)))
+        else:
+            result.append((item, 69))
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Helper tool for TFTP-Assisted UDP NAT Hole Punching"
+    )
+    parser.add_argument("-p", "--port", type=int, default=0, help="Source port")
+    parser.add_argument(
+        "-t", "--timeout", type=float, default=2.0, help="Timeout (seconds)"
+    )
+    parser.add_argument("-T", "--tries", type=int, default=3, help="Number of tries")
+    parser.add_argument(
+        "-s",
+        "--servers",
+        type=parse_server_list,
+        default=",".join([f"{s[0]}:{s[1]}" for s in _SERVER_LIST]),
+        help="Comma-separated list of servers IPs, optionally with ports (e.g. 192.0.2.1:69,198.51.100.1)",
+    )
+
+    args = parser.parse_args()
+
+    s = create_tftp_socket(port=args.port, timeout=args.timeout)
+    localaddr, localport = s.getsockname()
+
+    for srv in args.servers:
+        addr, port = tftp_test(s, localport, srv, args.tries)
+        print(
+            f"{srv[0]}:{srv[1]} for {localaddr}:{localport} returns address: {addr}:{port}"
+        )
+
+
+if __name__ == "__main__":
+    main()
