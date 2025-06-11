@@ -130,6 +130,7 @@ Note over S: Randezvous server now knows external addresses and ports assigned b
 S -->> ClientA: Client B is on 203.0.113.1:51021<br />(true only for server S)
 S -->> ClientB: Client A is on 198.51.100.1:33333
 Note over ClientA,ClientB: Trying to establish a direct UDP packet stream
+Note over ClientA: Sends a TFTP GET request
 ClientA ->> NatA: from 192.168.1.33:33333 to 203.0.113.1:69
 NatA ->> NatB: from 198.51.100.1:33333 to 203.0.113.1:69
 Note over NatA: TFTP translation table entry added<br />will accept reply from any port on 203.0.113.1
