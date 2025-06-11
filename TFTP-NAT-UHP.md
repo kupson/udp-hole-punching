@@ -108,6 +108,8 @@ Client A may still attempt to establish a direct UDP packet stream by guessing t
 - Sending too many guesses quickly can stress NAT B (CPU load, translation table overflows, bandwidth).
 - Sending guesses too slowly risks expiration of the required translation table entries.
 
+A useful technique to reduce this impact, based on [the birthday paradox](https://en.wikipedia.org/wiki/Birthday_problem) is described in [How NAT traversal works](https://tailscale.com/blog/how-nat-traversal-works) on Tailscale blog.
+
 ## TFTP-Assisted UDP Hole Punching
 
 Now consider the case where NAT A supports TFTP ALG and is EIM-NAT, while NAT B is non-EIM-NAT. The well-known port for TFTP protocol is UDP/69.
