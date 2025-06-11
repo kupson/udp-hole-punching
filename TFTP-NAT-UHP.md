@@ -159,6 +159,8 @@ This method can be combined with the classic approach by sending an additional U
 
 ## Applications
 
+This can potentially be used to improve connectivity in various Peer-to-Peer situations such as some VPNs (like Tailscale) or WebRTC applications.
+
 The utility of this method depends largely on the prevalence of NAT devices with TFTP ALG enabled. Some data suggests that certain DSL routers shipped by ISPs include this feature enabled by default.
 Further data collection is needed to assess the general viability of this technique for enhancing peer-to-peer connectivity.
 
