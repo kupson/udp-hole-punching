@@ -43,7 +43,9 @@ def send_tftp_request(s, pkt, srv):
         rsp, _ = s.recvfrom(1500)
         return rsp
     except TimeoutError:
-        logger.warning("Timeout")
+        logger.error("Timeout")
+    except OSError as e:
+        logger.error(f"Error sending/receiving: {e}")
     except Exception:
         logger.exception("Error sending/receiving:")
         return b""
