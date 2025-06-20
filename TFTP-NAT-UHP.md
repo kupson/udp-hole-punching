@@ -7,13 +7,13 @@ On certain NAT devices, the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc13
 
 ## TFTP Application Level Gateway
 
-Due to the simplicity of the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350), ALGs implemented in NAT devices are typically not full TFTP protocol proxies but act merely as helpers that modify NAT translation behavior.
+Due to the simplicity of the [TFTP protocol](https://www.rfc-editor.org/rfc/rfc1350), ALGs implemented in NAT devices are typically not full TFTP protocol proxies but act merely as helpers that modify NAT translation behaviour.
 
 NAT devices that support the TFTP protocol will accept UDP responses to TFTP requests from *any* source port on the target IP address.
 
 ## NAT Types
 
-As described in [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html), there are different types of NAT behaviors. Two are of particular interest:
+As described in [RFC5128](https://www.rfc-editor.org/rfc/rfc5128.html), there are different types of NAT behaviours. Two are of particular interest:
 
 - **Endpoint-Independent Mapping (EIM-NAT):** The same external address and port are used when a client sends UDP packets from the same internal port to multiple different endpoints.
 - **Non-Endpoint-Independent Mapping (non-EIM-NAT):** The external port[^1] may vary when the client sends UDP packets to different endpoints, even when using the same internal port.
@@ -153,11 +153,11 @@ Note over ClientA,ClientB: UDP packet stream established
 
 ### Key Observations
 
-Sending a single packet to port 69 on the peer's external IP address allows NAT A to create a more permissive translation table entry due to the TFTP ALG behavior.
+Sending a single packet to port 69 on the peer's external IP address allows NAT A to create a more permissive translation table entry due to the TFTP ALG behaviour.
 
 This method can be combined with the classic approach by sending an additional UDP packet to port 69, ideally after a short timeout if standard hole punching fails.
 
-### Live example
+### Live Example
 
 Let's have two hosts: `m` and `s`, and see the responses they received from STUN servers:
 
