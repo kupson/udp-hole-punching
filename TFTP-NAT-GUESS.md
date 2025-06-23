@@ -68,6 +68,42 @@ Total packets sent: 869
 
 Note that non-EIM-NAT devices can be freely chained (e.g., in a double-NAT setup), as long as all of them support TFTP-ALG.
 
+### Diagram
+
+```mermaid
+sequenceDiagram
+    participant ClientA as Client A<br />10.144.149.54
+    participant O2Nat as O2 UK CG-NAT<br />eIP: 82.132.231.141
+    participant S as Rendezvous Server S
+    participant OtherNat as NAT device<br />(any type)<br />eIP: 90.199.252.188
+    participant ClientB as Client B<br />192.168.1.21
+
+
+Note over ClientA: Client A performs STUN test
+Note over ClientB: Client B performs STUN test
+ClientA ->> S: Device A eIP: 82.132.231.141<br />ports are random
+ClientB ->> S: Device B eIP: 90.199.252.188<br />ports may be random
+Note over S: Randezvous server now knows external addresses but no ports
+Note over ClientA: Opens 256 UDP sockets<br />and bind(2) them to random ports 'x'
+loop 256 times
+ClientA ->> OtherNat: from 10.144.149.54:x to 90.199.252.188:69<br />TFTP GET REQ
+end
+Note over ClientB: Opens a single UDP socket
+loop pick random destination port 'eX', stop on received reply
+alt hit ('eX' is really an external port selected for 'x')
+ClientB ->> O2Nat: from 192.168.1.21:12356 to 82.132.231.141:eX
+O2Nat ->> ClientA: from 90.199.252.188:eY to 10.144.149.54:x
+ClientA ->> ClientB: reply from 10.144.149.54:x to 90.199.252.188:eY
+else miss
+ClientB ->> O2Nat: from 192.168.1.21:12356 to 82.132.231.141:eX
+Note over O2Nat: packet dropped
+end
+end
+Note over ClientA,ClientB: Client A knows B external port eY<br />Client B knows A external port eX
+ClientA <<->> ClientB: Direct UDP traffic #9989;
+```
+
+
 ---
 
 ### Metadata
