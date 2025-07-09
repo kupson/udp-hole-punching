@@ -11,6 +11,7 @@ Exploring possible improvements to the [RFC5128 UDP Hole Punching](https://www.r
 
 - [bin/tftptest](/bin/tftptest) - Simple test tool for checking TFTP connectivity
 - [bin/tftpspray](/bin/tftpspray) - Helper tool for the TFTP-Assisted [birthday paradox](https://en.wikipedia.org/wiki/Birthday_problem) port guessing
+- [tftpuhpd](https://github.com/kupson/udp-hole-punching-tftpuhpd) TFTP STUN-like server for `bin/tftptest`
 
 # How to Help
 
