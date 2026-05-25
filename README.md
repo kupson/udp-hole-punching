@@ -6,6 +6,8 @@ Exploring possible improvements to the [RFC5128 UDP Hole Punching](https://www.r
 
 - [TFTP-NAT-UHP.md](/TFTP-NAT-UHP.md) - helping EIM-NAT (with TFTP-ALG) &lt;-&gt; non-EIM-NAT scenarios
 - [TFTP-NAT-GUESS.md](/TFTP-NAT-GUESS.md) - enabling non-EIM-NAT (with TFTP-ALG) &lt;-&gt; non-EIM-NAT scenarios without a relay server
+- [ORACLE-NAT-HP.md](/ORACLE-NAT-HP.md) - safer alternative for [birthday paradox](https://en.wikipedia.org/wiki/Birthday_problem) port guessing
+- [ORACLE-HARD-NAT-HP.md](/ORACLE-HARD-NAT-HP.md) - direct connections for non-EIM-NAT &lt;-&gt; non-EIM-NAT cases
 
 ## Tools
 
