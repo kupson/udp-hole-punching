@@ -19,6 +19,3 @@ Exploring possible improvements to the [RFC5128 UDP Hole Punching](https://www.r
 
 You can contribute by sharing information about your ISP and router in [issue #1](https://github.com/kupson/udp-hole-punching/issues/1).
 
-#### TODO
-
-- Investigate SIP-ALG.
